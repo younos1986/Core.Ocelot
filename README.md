@@ -1,9 +1,10 @@
-# Core.Ocelot. an ASP.NET Core middleware to implementing API Gateways in Microservice based applications
+# Core.Ocelot is an ASP.NET Core middleware to implement API Gateways in Microservice based applications
 
 
 # Features
 
 * LoadBalancing  (based on Nginx)
+** test 1
 * IpRateLimiting
 * Authorization
 
