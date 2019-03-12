@@ -9,7 +9,5 @@ git push -u origin master
 
 
 
-ECHO press any key to continue...: 
-set /p done=
 
-
+TIMEOUT /T 60

@@ -14,7 +14,7 @@ namespace ServerA.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
-            return new string[] { "Server 1", "value2" };
+            return new string[] { "Server 1" };
         }
 
         // GET api/values/5

@@ -35,6 +35,14 @@ namespace MainServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
+            int worker;
+            int ioCompletion;
+            System.Threading.ThreadPool.GetMaxThreads(out worker, out ioCompletion);
+            Console.WriteLine("{0} / {1}", worker, ioCompletion);
+
+
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
 
@@ -76,10 +84,9 @@ namespace MainServer
             //ignore Ocelat ReRoutes
             AppMapWhen(app);
 
-
-
-
             app.UseCoreOcelot();
+
+
             app.UseHttpsRedirection();
             app.UseMvc();
         }

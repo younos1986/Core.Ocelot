@@ -5,6 +5,7 @@ using Core.Ocelot.Middlewares.Authorization;
 using Core.Ocelot.Middlewares.IPRateLimiting;
 using Core.Ocelot.Servers;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,35 +18,24 @@ namespace Core.Ocelot.OcelotMiddlewares
 {
     public static class CoreOcelotMiddlewareExtensions
     {
-        public static IApplicationBuilder UseCoreOcelot(this IApplicationBuilder app)
-        {
-           // System.Diagnostics.Debugger.Break();
-
-            app.UseMiddleware<AuthorizationMiddleware>();
-
-            app.UseMiddleware<IPRateLimitingMiddleware>();
-
-            app.UseMiddleware<LoadBalancerMiddleware>();
-
-            return app;
-        }
-
-        public static IServiceCollection AddCoreOcelot(this IServiceCollection services , Action<CoreOcelotConfiguration> coreOcelotConfig = null)
+        public static IServiceCollection AddCoreOcelot(this IServiceCollection services, Action<CoreOcelotConfiguration> coreOcelotConfig = null)
         {
             //System.Diagnostics.Debugger.Break();
+
+            PerformCorsSetup(services);
 
             services.AddScoped<ILoadBalancerFactory, LoadBalancerFactory>();
             services.AddScoped<IIpHasher, IpHasher>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<IIPRateLimiter, IPRateLimiter>();
             services.AddScoped<IIpAddressParser, RemoteIpParser>();
-            
+
 
 
             var coreOcelotConfiguration = new CoreOcelotConfiguration();
             coreOcelotConfig.Invoke(coreOcelotConfiguration);
 
-            services.AddSingleton<CoreOcelotConfiguration>(provider  =>
+            services.AddSingleton<CoreOcelotConfiguration>(provider =>
             {
                 return coreOcelotConfiguration;
             });
@@ -63,5 +53,55 @@ namespace Core.Ocelot.OcelotMiddlewares
 
             return services;
         }
+
+        public static IApplicationBuilder UseCoreOcelot(this IApplicationBuilder app)
+        {
+            // System.Diagnostics.Debugger.Break();
+
+            #region for Error `ERR_INVALID_HTTP_RESPONSE` in angular2+
+            app.Use(async (ctx, next) =>
+            {
+                await next();
+                if (ctx.Response.StatusCode == 204)
+                {
+                    ctx.Response.ContentLength = 0;
+                }
+            });
+            #endregion
+
+            app.UseCors("SiteCorsPolicy");
+
+
+
+            app.UseMiddleware<AuthorizationMiddleware>();
+
+            app.UseMiddleware<IPRateLimitingMiddleware>();
+
+            app.UseMiddleware<LoadBalancerMiddleware>();
+
+            return app;
+        }
+
+        
+
+        private static void PerformCorsSetup(IServiceCollection services)
+        {
+            // ********************
+            // Setup CORS
+            // ********************
+            var corsBuilder = new CorsPolicyBuilder();
+            corsBuilder.AllowAnyHeader();
+            corsBuilder.AllowAnyMethod();
+            corsBuilder.AllowAnyOrigin(); // For anyone access.
+                                          //corsBuilder.WithOrigins("http://localhost:56573"); // for a specific url. Don't add a forward slash on the end!
+            corsBuilder.AllowCredentials();
+
+            services.AddCors(options =>
+            {
+
+                options.AddPolicy("SiteCorsPolicy", corsBuilder.Build());
+            });
+        }
+
     }
 }

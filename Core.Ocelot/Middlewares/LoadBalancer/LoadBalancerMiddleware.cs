@@ -2,6 +2,7 @@
 using Core.Ocelot.Extensions;
 using Core.Ocelot.LoadBalancerFactories;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
 
         public async Task Invoke(HttpContext context)
         {
-            //System.Diagnostics.Debugger.Break();
+            // System.Diagnostics.Debugger.Break();
 
             ILoadBalancerFactory loadBalancerFactory = (ILoadBalancerFactory)context.RequestServices.GetService(typeof(ILoadBalancerFactory));
             IHttpClientFactory httpClientFactory = (IHttpClientFactory)context.RequestServices.GetService(typeof(IHttpClientFactory));
@@ -41,6 +42,7 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
 
             var path = context.Request.Path;
 
+
             var httpClient = httpClientFactory.CreateClient(ip);
             HttpResponseMessage response = null;
             try
@@ -51,9 +53,12 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
 
                 response = await ExecuteRequest(context, ip, path, httpClient, response);
 
+
+
+
                 _localStopwatch.Value.Stop();
                 server.FixedSizedQueues.Enqueue(_localStopwatch.Value.ElapsedMilliseconds);
-
+                return;
             }
             catch (HttpRequestException ex)
             {
@@ -63,13 +68,15 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
                 await PrepareResponse(context, response);
             }
 
-            
+
             await this.nextMiddleware.Invoke(context);
         }
 
         private static async Task<HttpResponseMessage> ExecuteRequest(HttpContext context, string ip, PathString path, HttpClient httpClient, HttpResponseMessage response)
         {
-            HttpRequestMessage request = new HttpRequestMessage(new HttpMethod(context.Request.Method), ip + path);
+            string url = MakeUrl(context, ip, path);
+
+            HttpRequestMessage request = new HttpRequestMessage(new HttpMethod(context.Request.Method), url);
             request.Content = await context.Request.MapContent();
 
             httpClient.AddAuthorizationHeaderIfExistsOnRequest(context);
@@ -79,7 +86,29 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
 
             response.EnsureSuccessStatusCode();
             await PrepareResponse(context, response);
+
+
             return response;
+        }
+
+        private static string MakeUrl(HttpContext context, string ip, PathString path)
+        {
+            var queryParams = ConvertQueryStringToDictionary(context.Request.QueryString.ToString());
+            var url = QueryHelpers.AddQueryString(ip + path, queryParams);
+            return url;
+        }
+
+        private static Dictionary<string, string> ConvertQueryStringToDictionary(string queryString)
+        {
+            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers
+                .ParseQuery(queryString);
+
+            Dictionary<string, string> temp = new Dictionary<string, string>();
+            foreach (var q in query)
+            {
+                temp.Add(q.Key, q.Value.ToString());
+            }
+            return temp;
         }
 
         private static async Task PrepareResponse(HttpContext context, HttpResponseMessage response)
@@ -90,6 +119,7 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
             }
 
             var content = await response.Content.ReadAsStreamAsync();
+
             using (content)
             {
                 if (response.StatusCode != HttpStatusCode.NotModified && context.Response.ContentLength != 0)
@@ -97,6 +127,14 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
                     await content.CopyToAsync(context.Response.Body);
                 }
             }
+
+            context.Response.StatusCode = (int)response.StatusCode;
+            if (context.Response.StatusCode == 204)
+            {
+                context.Response.ContentLength = 0;
+            }
+
+            //context.Response.ContentType = new MediaTypeHeaderValue("application/json").MediaType;
         }
 
         private static void AddHeaderIfDoesntExist(HttpContext context, Header httpResponseHeader)

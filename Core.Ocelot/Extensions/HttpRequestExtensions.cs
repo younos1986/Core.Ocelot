@@ -22,6 +22,8 @@ namespace Core.Ocelot.Extensions
             // Never change this to StreamContent again, I forgot it doesnt work in #464.
             var content = new ByteArrayContent(await ToByteArray(request.Body));
 
+
+
             if (!string.IsNullOrEmpty(request.ContentType))
             {
                 content.Headers
@@ -34,6 +36,14 @@ namespace Core.Ocelot.Extensions
             AddHeaderIfExistsOnRequest("Content-MD5", content, request);
             AddHeaderIfExistsOnRequest("Content-Disposition", content, request);
             AddHeaderIfExistsOnRequest("Content-Encoding", content, request);
+
+            AddHeaderIfExistsOnRequest("Accept", content, request);
+            AddHeaderIfExistsOnRequest("Accept-Encoding", content, request);
+            AddHeaderIfExistsOnRequest("Accept-Language", content, request);
+            AddHeaderIfExistsOnRequest("Access-Control-Allow-Origin", content, request);
+            AddHeaderIfExistsOnRequest("Access-Control-Request-Method", content, request);
+            AddHeaderIfExistsOnRequest("Access-Control-Request-Headers", content, request);
+
 
             // request.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(string.Format("{0}:{1}", "username", "password"))));
 
@@ -52,7 +62,7 @@ namespace Core.Ocelot.Extensions
         {
             if (context.Request.Headers.ContainsKey("Authorization"))
             {
-                httpClient.DefaultRequestHeaders.Add("Authorization",  context.Request.Headers["Authorization"].ToList() );
+                httpClient.DefaultRequestHeaders.Add("Authorization", context.Request.Headers["Authorization"].ToList());
             }
         }
         private async static Task<byte[]> ToByteArray(Stream stream)
