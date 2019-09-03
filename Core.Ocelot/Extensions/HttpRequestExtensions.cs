@@ -22,7 +22,7 @@ namespace Core.Ocelot.Extensions
             // Never change this to StreamContent again, I forgot it doesnt work in #464.
             var content = new ByteArrayContent(await ToByteArray(request.Body));
 
-
+            
 
             if (!string.IsNullOrEmpty(request.ContentType))
             {
@@ -62,7 +62,7 @@ namespace Core.Ocelot.Extensions
         {
             if (context.Request.Headers.ContainsKey("Authorization"))
             {
-                httpClient.DefaultRequestHeaders.Add("Authorization", context.Request.Headers["Authorization"].ToList());
+                httpClient.DefaultRequestHeaders.Add("Authorization",  context.Request.Headers["Authorization"].ToList() );
             }
         }
         private async static Task<byte[]> ToByteArray(Stream stream)

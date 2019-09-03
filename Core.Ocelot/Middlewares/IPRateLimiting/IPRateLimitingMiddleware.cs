@@ -20,6 +20,7 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
         public async Task Invoke(HttpContext context)
         {
             //System.Diagnostics.Debugger.Break();
+            if (context == null) return;
 
             CoreOcelotConfiguration coreOcelotConfiguration = (CoreOcelotConfiguration)context.RequestServices.GetService(typeof(CoreOcelotConfiguration));
             IIPRateLimiter ipRateLimiter = (IIPRateLimiter)context.RequestServices.GetService(typeof(IIPRateLimiter));

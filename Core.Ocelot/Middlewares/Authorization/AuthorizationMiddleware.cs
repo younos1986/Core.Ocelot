@@ -20,6 +20,8 @@ namespace Core.Ocelot.Middlewares.Authorization
         {
             //System.Diagnostics.Debugger.Break();
 
+            if (context == null) return;
+
             CoreOcelotConfiguration coreOcelotConfiguration = (CoreOcelotConfiguration)context.RequestServices.GetService(typeof(CoreOcelotConfiguration));
 
             if (coreOcelotConfiguration != null && coreOcelotConfiguration.EnableAutorization)

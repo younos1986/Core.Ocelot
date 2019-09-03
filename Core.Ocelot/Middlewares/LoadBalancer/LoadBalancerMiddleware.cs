@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +28,12 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
 
         public async Task Invoke(HttpContext context)
         {
-            // System.Diagnostics.Debugger.Break();
+            //System.Diagnostics.Debugger.Break();
+            if (context == null) return;
+
+            if (context.Request.Path.ToString().Contains("favicon"))
+                return;
+
 
             ILoadBalancerFactory loadBalancerFactory = (ILoadBalancerFactory)context.RequestServices.GetService(typeof(ILoadBalancerFactory));
             IHttpClientFactory httpClientFactory = (IHttpClientFactory)context.RequestServices.GetService(typeof(IHttpClientFactory));
@@ -83,8 +89,9 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
 
             response = httpClient.SendAsync(request).GetAwaiter().GetResult();
 
+            if (!response.ReasonPhrase.ToLower().Contains("bad request"))
+                response.EnsureSuccessStatusCode();
 
-            response.EnsureSuccessStatusCode();
             await PrepareResponse(context, response);
 
 
@@ -128,11 +135,11 @@ namespace Core.Ocelot.Middlewares.IPRateLimiting
                 }
             }
 
-            context.Response.StatusCode = (int)response.StatusCode;
-            if (context.Response.StatusCode == 204)
-            {
-                context.Response.ContentLength = 0;
-            }
+            //context.Response.StatusCode = (int)response.StatusCode;
+            //if (context.Response.StatusCode == 204)
+            //{
+            //    context.Response.ContentLength = 0;
+            //}
 
             //context.Response.ContentType = new MediaTypeHeaderValue("application/json").MediaType;
         }

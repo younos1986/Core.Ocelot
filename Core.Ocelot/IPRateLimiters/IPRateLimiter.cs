@@ -29,10 +29,6 @@ namespace Core.Ocelot.IPRateLimiters
 
             var clientIP = _ipParser.GetClientIp(context);
 
-            //called from integration test 
-            if (clientIP == null)
-                return false;
-
             //System.Diagnostics.Debugger.Break();
 
             if (_ipParser.ContainsIp(setting.IPWhitelist, clientIP.ToString()))
